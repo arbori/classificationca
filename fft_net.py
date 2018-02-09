@@ -16,8 +16,10 @@ import classificationca as cca
 ###############################################################################
 ## ...
 checkpoint_prefix = "./prediction"
-samples_per_class = 25
+samples_per_class = 1000
 epoch_max = 600
+
+error_threshold = 10e-3
 
 ## Define placeholder for inputs to network
 xs = tf.placeholder(tf.float32, [100, 100])
@@ -134,38 +136,41 @@ def training_net(sess, prediction):
   print("Training rule...")
 
   ics = cca.init_conditions_numbers(k, length, samples_per_class)
-  samples = range(samples_per_class)
+  #samples = range(samples_per_class)
 
-  for epoch in range(epoch_max):
-#    localtime = time.asctime( time.localtime(time.time()) )
-#    print(localtime, "Epoca:", epoch)
+  for n in range(0,255):
+    localtime = time.asctime( time.localtime(time.time()) )
+    print(localtime, ":", "Treinando regra", n)
 
-    classe_num = 0
     error = 0.0
     total_train_step = 0
     
-    for classes in cca.WolframSubclass:
-#      localtime = time.asctime( time.localtime(time.time()) )
-#      print(localtime, "Classe:", classe_num)
+    for ic in ics:
+      #localtime = time.asctime( time.localtime(time.time()) )
+      #print(localtime, ":", "IC", ic)
 
-      classe_num += 1
+      icbin = cca.from_number_fix(ic, 2, length)
 
-      for n in classes:
-#        print(n)
+      erroic = 10e9
+      #tempted = 0
 
-        for tempted in samples:
-          # Get data
-          x_data, y_data = get_data(n, cca.from_number_fix(ics[tempted], 2, length))
+      while erroic > error_threshold:
+        #localtime = time.asctime( time.localtime(time.time()) )
+        #print(localtime, ":", "Erro IC", erroic)
 
-          ## Training
-          sess.run(train_step, feed_dict={xs:x_data, ys:y_data})
-          ## Update the loost mean                
-          error += sess.run(loss, feed_dict={xs:x_data, ys:y_data})
+        # Get data
+        x_data, y_data = get_data(n, icbin)
 
-          total_train_step += 1
+        ## Training
+        sess.run(train_step, feed_dict={xs:x_data, ys:y_data})
+        ## Update the loost mean                
+        erroic = sess.run(loss, feed_dict={xs:x_data, ys:y_data})
+
+      total_train_step += 1
+      error += erroic
 
     localtime = time.asctime( time.localtime(time.time()) )
-    print(localtime, ":", epoch, (error/total_train_step))
+    print(localtime, ":", n, (error/total_train_step))
 
   return prediction
 
@@ -187,7 +192,7 @@ def compute_average_acuracy(sess, prediction):
         error += 1
 
         if np.sum(y) != 1:
-          print("Apenas uma resposta e possivel:", n, y)
+          print("Resposta inconsistente:", n, y)
 
     predict_average = (1.0 - (error/(0.25*epoch_max)))
 
