@@ -773,4 +773,9 @@ def entropy_evolution_elementar_space():
 
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
-    entropy_evolution_elementar_space()
+    #entropy_evolution_elementar_space()
+
+    y_result = [0 for _ in range(4)]
+    y_result[wolfram_class(110) - 1] = 1
+
+    print(y_result)
