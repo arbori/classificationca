@@ -1,16 +1,3 @@
-#  Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
 """Convolutional Neural Network Estimator for CA Classification, built with tf.layers."""
 from __future__ import absolute_import
 from __future__ import division
@@ -30,7 +17,7 @@ import classificationca as cca
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-
+###############################################################################
 def cnn_model_fn(features, labels, mode):
     """Model function for CNN."""
     # Input Layer
@@ -44,6 +31,7 @@ def cnn_model_fn(features, labels, mode):
     # Input Tensor Shape: [batch_size, 100, 100, 1]
     # Output Tensor Shape: [batch_size, 100, 100, 32]
     conv1 = tf.layers.conv2d(
+        
         inputs=input_layer,
         filters=32, 
         kernel_size=[3, 3], 

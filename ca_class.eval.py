@@ -22,14 +22,17 @@ print("Importing...")
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
+import sys
 
 import random as rnd
 
 import cellularautomata as ca
 import classificationca as cca
+import neigbor_spectrum as nspec
 
-tf.logging.set_verbosity(tf.logging.INFO)
+#tf.logging.set_verbosity(tf.logging.INFO)
 
+###############################################################################
 def cnn_model_fn(features, labels, mode):
     """Model function for CNN."""
     # Input Layer
@@ -143,173 +146,7 @@ def cnn_model_fn(features, labels, mode):
         mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 ###############################################################################
-def evaluate_r1():
-    # Define parameters of cellular automata
-    k = 2
-    r = 1
-    t = 100
-
-    eval_data_size = 512
-    eval_data_file = Path("./ca_classification.eval.data.npy")
-    eval_array = []
-
-    # Generate/Load training and eval data
-    if not eval_data_file.exists():
-        print("Generate eval data")
-        #eval_array = cca.make_data_label_rule_te(eval_data_size, k, r, 3*t, 2*t)
-        eval_array = cca.make_set_pair_evolution_label(eval_data_size, k, r, 3*t, 2*t)
-
-        print("Save eval data")
-        np.save(eval_data_file, eval_array)
-    else:
-        print("Load eval data")
-        eval_data = np.load(eval_data_file)
-
-        eval_array.append([line for line in eval_data[0]])
-        eval_array.append([line for line in eval_data[1]])
-        eval_array.append([line for line in eval_data[2]])
-
-    # Set training and eval data
-    print("Set data to train/eval the network")
-    eval_data = np.array(eval_array[0], dtype=np.float32)
-    eval_labels = np.array(eval_array[1], dtype=np.int32)
-    eval_rules = np.array(eval_array[2], dtype=np.int32)
-
-    # Create the Estimator
-    print("Create the Estimator")
-    mnist_classifier = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir="./ca_classification")
-
-    # Evaluate the model and print results
-    print("Evaluate the model and print results")
-    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x": eval_data},
-        y=eval_labels,
-        num_epochs=1,
-        shuffle=False)
-
-    eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
-    print("eval_results:", eval_results)
-
-    # Predict CA in ray 1 space
-    with open('ca_class.out.txt', mode='w', encoding='utf-8') as a_file:
-        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={"x": eval_data},
-            num_epochs=1,
-            shuffle=False)
-
-        result_predict = mnist_classifier.predict(eval_input_fn, predict_keys=None, hooks=None)
-
-        eval_prob = [p['probabilities'] for p in result_predict]
-
-        total_correct = 0
-
-        for i in range(len(eval_labels)):
-            if eval_labels[i] == np.argmax(eval_prob[i]): 
-                total_correct += 1
-
-            print(eval_rules[i], end="\t")
-            print(eval_labels[i], end="\t")
-            print(np.argmax(eval_prob[i])+1, end="\t")
-            print(eval_prob[i])
-
-            a_file.write(str(eval_rules[i]))
-            a_file.write("\t")
-            a_file.write(str(eval_labels[i]))
-            a_file.write("\t")
-            a_file.write(str(np.argmax(eval_prob[i])+1))
-            a_file.write("\t")
-            for val in eval_prob[i]:
-                a_file.write(str(val))
-                a_file.write("\t")
-            a_file.write("\n")
-
-            a_file.flush()
-
-        print(total_correct / len(eval_labels))
-
-        a_file.write(str(total_correct / len(eval_labels)))
-        a_file.write("\n")
-
-###############################################################################
-def evaluate_r15():
-    # Define parameters of cellular automata
-    k = 2
-    r = 1.5
-    t = 100
-
-    eval_data_file = Path("./ca_classification.eval.data-r15.npy")
-    eval_array = []
-
-    # Generate/Load training and eval data
-    if not eval_data_file.exists():
-        print("Generate eval data")
-        #eval_array = cca.make_data_label_rule_te(eval_data_size, k, r, 3*t, 2*t)
-        eval_array = cca.make_space_evaluate(k, r, 3*t, 2*t)
-
-        print("Save eval data")
-        np.save(eval_data_file, eval_array)
-    else:
-        print("Load eval data")
-        eval_data = np.load(eval_data_file)
-
-        eval_array.append([line for line in eval_data[0]])
-        eval_array.append([line for line in eval_data[1]])
-        eval_array.append([line for line in eval_data[2]])
-
-    # Set training and eval data
-    print("Set data to train/eval the network")
-    eval_data = np.array(eval_array[0], dtype=np.float32)
-    eval_labels = np.array(eval_array[1], dtype=np.int32)
-    eval_rules = np.array(eval_array[2], dtype=np.int32)
-
-    # Create the Estimator
-    print("Create the Estimator")
-    mnist_classifier = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir="./ca_classification")
-
-    # Predict CA in ray 1 space
-    with open('ca_class.out.txt', mode='w', encoding='utf-8') as a_file:
-        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={"x": eval_data},
-            num_epochs=1,
-            shuffle=False)
-
-        result_predict = mnist_classifier.predict(eval_input_fn, predict_keys=None, hooks=None)
-
-        eval_prob = [p['probabilities'] for p in result_predict]
-
-        total_correct = 0
-
-        for i in range(len(eval_labels)):
-            if eval_labels[i] == np.argmax(eval_prob[i]): 
-                total_correct += 1
-
-            print(eval_rules[i], end="\t")
-            print(eval_labels[i], end="\t")
-            print(np.argmax(eval_prob[i]), end="\t")
-            print(eval_prob[i])
-
-            a_file.write(str(eval_rules[i]))
-            a_file.write("\t")
-            a_file.write(str(eval_labels[i]))
-            a_file.write("\t")
-            a_file.write(str(np.argmax(eval_prob[i])))
-            a_file.write("\t")
-            for val in eval_prob[i]:
-                a_file.write(str(val))
-                a_file.write("\t")
-            a_file.write("\n")
-
-            a_file.flush()
-
-        print(total_correct / len(eval_labels))
-
-        a_file.write(str(total_correct / len(eval_labels)))
-        a_file.write("\n")
-
-###############################################################################
-def evaluate_space_rule(k, r, total_ics, model_path, output_file, output_encoding='utf-8'):
+def classify_space_rule(k, r, total_ics, model_path, output_file, output_encoding='utf-8'):
     size = 100
     t = 3*size
     transient = 2*size
@@ -327,10 +164,10 @@ def evaluate_space_rule(k, r, total_ics, model_path, output_file, output_encodin
         for n in range(rule_size):
             print("Rule:", n)
 
-            eval_data = cca.rule_temporal_evolution_sample(n, k, r, t, transient, total_ics)
+            eval_data = cca.make_temporal_evolutions_rule(total_ics, n, k, r, t, transient)
 
             eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-                x={"x": np.array(eval_data, dtype=np.float32)},
+                x={"x": np.array(eval_data[0], dtype=np.float32)},
                 num_epochs=1,
                 shuffle=False)
 
@@ -354,27 +191,115 @@ def evaluate_space_rule(k, r, total_ics, model_path, output_file, output_encodin
             a_file.flush()
 
 ###############################################################################
+def network_predict_classification(temporal_evolution, classifier):
+    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": np.array(temporal_evolution, dtype=np.float32)},
+        num_epochs=1,
+        shuffle=False)
+
+    result_predict = classifier.predict(eval_input_fn, predict_keys=None, hooks=None)
+
+    eval_prob = [p['probabilities'] for p in result_predict]
+    eval_prob = [np.sum(line) for line in np.transpose(eval_prob)]
+    eval_prob = eval_prob / np.sum(eval_prob)
+
+    return (np.argmax(eval_prob) + 1)
+
+###############################################################################
+def predict_with_network_and_spectrum(k, r, total_ics, size, model_path, database_file, output_file, output_encoding='utf-8'):
+    '''
+    '''
+    t = 3*size
+    transient = 2*size
+
+    m = 2*r + 1
+    rule_size = int(pow(k, pow(k, m)))
+
+    # Create the Estimator
+    print("Retriving the estimator in", model_path)
+    network_estimator = tf.estimator.Estimator(
+        model_fn=cnn_model_fn, model_dir=model_path)
+
+    print("Retriving database", database_file)
+    db = nspec.retrieve_spectrum_dataset(database_file)
+
+    print("Creating initial conditions dataset...")
+    ics = cca.init_conditions_numbers(k, t, total_ics)
+
+    with open(output_file, mode='w', encoding=output_encoding) as outf:
+        print("Create output file", output_file)
+        outf.write("rule\tagree\ts1\ts2\ts3\ts4\tnet1\tnet2\tnet3\tnet4\n")
+        outf.flush()
+
+        for n in range(rule_size):
+            concordancia_total = 0
+
+            spectrum_classes = [0] * 4
+            network_classes = [0] * 4
+
+            print("Compute rule", n)
+
+            for ic in ics:
+                te = ca.cellularautomata(n, k, r, ca.from_number_fix(ic, k, t), t, transient)
+                
+                spectrum_classified = nspec.spectrum_predict_classification(te, k, r, db)
+                network_classified = network_predict_classification(te, network_estimator)
+
+                spectrum_classes[spectrum_classified - 1] += 1
+                network_classes[network_classified - 1] += 1
+
+                if spectrum_classified == network_classified:
+                    concordancia_total += 1
+
+            total = float(len(ics))
+
+            spectrum_classes = [float(s)/total for s in spectrum_classes]
+            network_classes = [float(net)/total for net in network_classes]
+
+            print("Write resulte for rule", n)
+            outf.write(str(n))
+            outf.write("\t")
+            outf.write(str(float(concordancia_total)/float(len(ics))))
+            outf.write("\t")
+            for val in spectrum_classes:
+                outf.write(str(val))
+                outf.write("\t")
+            for val in network_classes:
+                outf.write(str(val))
+                outf.write("\t")
+            outf.write("\n")
+            outf.flush()
+
+###############################################################################
 def main(argv):
-    if len(argv) < 6:
-        print("Usage: python ca_class_eval.py k, r, total_ics, model_path, output_file[, output_encoding]")
+    if len(argv) < 7:
+        print("Usage: python ca_class_eval.py k, r, size, total_ics, model_path, database_file, output_file[, output_encoding]")
         return
 
     print("Start evaluating...")
 
-    k = int(argv[1])
-    r = float(argv[2])
-    total_ics = int(argv[3])
+    k = int(argv[0])
+    r = float(argv[1])
+    total_ics = int(argv[2])
+    size = int(argv[3])
     model_path = argv[4]
-    output_file = argv[5]
-    
-    if len(argv) >= 7:
-        output_encoding = argv[6]
-        evaluate_space_rule(k, r, total_ics, model_path, output_file, output_encoding) 
+    database_file = argv[5]
+    output_file = argv[6]
+
+    dataset_file = Path(database_file)
+
+    if not dataset_file.exists():
+        print("Create spectrum dataset")    
+        nspec.create_spectrum_dataset(k, r, size, 3*size, 2*size, total_ics, database_file)
+
+    if len(argv) >= 8:
+        output_encoding = argv[7]
+        predict_with_network_and_spectrum(k, r, total_ics, size, model_path, database_file, output_file, output_encoding)
     else:
-        evaluate_space_rule(k, r, total_ics, model_path, output_file)
+        predict_with_network_and_spectrum(k, r, total_ics, size, model_path, database_file, output_file)
 
     print("Finish.")
 
 ###############################################################################
 if __name__ == "__main__":
-    tf.app.run()
+    main(sys.argv[1:])
