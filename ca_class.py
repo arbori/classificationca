@@ -9,6 +9,7 @@ print("Importing...")
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
+import sys
 
 import random as rnd
 
@@ -16,6 +17,13 @@ import cellularautomata as ca
 import classificationca as cca
 
 tf.logging.set_verbosity(tf.logging.INFO)
+
+###############################################################################
+config = {}
+config["kernel_size"] = [5,5]
+config["padding="] = "same"
+config["steps"] = 1000
+config["batch_size"] = 500
 
 ###############################################################################
 def cnn_model_fn(features, labels, mode):
@@ -31,10 +39,9 @@ def cnn_model_fn(features, labels, mode):
     # Input Tensor Shape: [batch_size, 100, 100, 1]
     # Output Tensor Shape: [batch_size, 100, 100, 32]
     conv1 = tf.layers.conv2d(
-        
         inputs=input_layer,
         filters=32, 
-        kernel_size=[3, 3], 
+        kernel_size = config["kernel_size"], 
         padding="same", 
         activation=tf.nn.relu)
 
@@ -52,7 +59,7 @@ def cnn_model_fn(features, labels, mode):
     conv2 = tf.layers.conv2d(
         inputs=pool1,
         filters=64, 
-        kernel_size=[3, 3], 
+        kernel_size = config["kernel_size"], 
         padding="same", 
         activation=tf.nn.relu)
 
@@ -70,7 +77,7 @@ def cnn_model_fn(features, labels, mode):
     conv3 = tf.layers.conv2d(
         inputs=pool2,
         filters=128,
-        kernel_size=[3, 3], 
+        kernel_size=config["kernel_size"], 
         padding="same", 
         activation=tf.nn.relu)
 
@@ -131,19 +138,14 @@ def cnn_model_fn(features, labels, mode):
     return tf.estimator.EstimatorSpec(
         mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
-def main(unused_argv):
-    # Define parameters of cellular automata
-    k = 2
-    r = 1
-    t = 100
-
-    train_data_size = 5120
+###############################################################################
+def train_function(k, r, t, transient, train_data_size, train_file, eval_file, model_diretory):
     eval_data_size = int(0.1*train_data_size)
     if eval_data_size <= 0:
         eval_data_size = 1
 
-    train_data_file = Path("./ca_classification.train.data.npy")
-    eval_data_file = Path("./ca_classification.eval.data.npy")
+    train_data_file = Path(train_file)
+    eval_data_file = Path(eval_file)
 
     train_data = []
     train_labels = []
@@ -153,9 +155,9 @@ def main(unused_argv):
     # Generate/Load training and eval data
     if (not train_data_file.exists()) or (not eval_data_file.exists()):
         print("Generate training data")
-        train_array = cca.make_set_pair_evolution_label(train_data_size, k, r, 3*t, 2*t)
+        train_array = cca.make_set_pair_evolution_label(train_data_size, k, r, t, transient)
         print("Generate eval data")
-        eval_array = cca.make_set_pair_evolution_label(eval_data_size, k, r, 3*t, 2*t)
+        eval_array = cca.make_set_pair_evolution_label(eval_data_size, k, r, t, transient)
 
         print("Save training data")
         np.save(train_data_file, train_array)
@@ -186,8 +188,9 @@ def main(unused_argv):
 
     # Create the Estimator
     print("Create the Estimator")
-    mnist_classifier = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir="./ca_classification")
+    ca_classifier = tf.estimator.Estimator(
+        #model_fn=cnn_model_fn, model_dir=model_diretory)
+        model_fn=cnn_model_fn, model_dir=model_diretory)
 
     # Set up logging for predictions
     # Log the values in the "Softmax" tensor with label "probabilities"
@@ -201,12 +204,12 @@ def main(unused_argv):
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data},
         y=train_labels,
-        batch_size=100,
+        batch_size=config["batch_size"],
         num_epochs=None,
         shuffle=True)
-    mnist_classifier.train(
+    ca_classifier.train(
         input_fn=train_input_fn,
-        steps=20000,
+        steps=config["steps"],
         hooks=[logging_hook])
 
     # Evaluate the model and print results
@@ -217,8 +220,34 @@ def main(unused_argv):
         num_epochs=1,
         shuffle=False)
 
-    eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
+    eval_results = ca_classifier.evaluate(input_fn=eval_input_fn)
     print(eval_results)
 
+###############################################################################
+def main(argv):
+    if len(argv) < 8:
+        print("Usage: python ca_class.py k r t transient train_data_size train_file eval_file model_diretory")
+        return
+
+    print("Start training...")
+
+    k = int(argv[0])
+    r = float(argv[1])
+    t = int(argv[2])
+    transient = int(argv[3])
+    train_data_size = int(argv[4])
+    train_file = argv[5]
+    eval_file = argv[6]
+    model_diretory = argv[7]
+
+    train_function(k, r, t, transient, train_data_size, train_file, eval_file, model_diretory)
+
+    '''
+    train_function(2, 1.0, 300, 200, 1100, 
+        "C:/Users/arbori/classification.data/ca_classification.train.data.npy",
+        "C:/Users/arbori/classification.data/ca_classification.eval.data.npy",
+        "C:/Users/arbori/classification.data/ca_classification_kernel5x5")
+    '''
+###############################################################################
 if __name__ == "__main__":
-    tf.app.run()
+    main(sys.argv[1:])

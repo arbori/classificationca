@@ -49,8 +49,6 @@ def create_spectrum_dataset(k, r, length, t, transient, experiments, dataset_fil
     neighborhood_size = int(pow(k, m*m))
     spectrum_result = [0] * neighborhood_size
 
-    begin = time.time()
-
     print(get_tmstr(), " - Begin")
     print(get_tmstr(), " - Rule size:", rule_size)
 
@@ -58,6 +56,8 @@ def create_spectrum_dataset(k, r, length, t, transient, experiments, dataset_fil
 
     with open(dataset_file, mode='w', encoding=encoding_type) as a_file:
         for n in range(rule_size):
+            begin = time.time()
+            
             print(get_tmstr(), " - Rule", n)
 
             for i in range(experiments):
