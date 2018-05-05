@@ -1,7 +1,3 @@
-print("Importing modules...")
-
-#import os
-#os.environ.setdefault('PATH', '')
 import time
 import datetime
 from pathlib import Path
@@ -207,15 +203,16 @@ def main(argv):
     if len(argv) >= 8:
         output_file_name = argv[7]
 
-    print(
-        "Classifing rule space with", k, "states and radius", r, "\n\t"
-        "Length:", length, "units\n\t",
-        "Time:", t, "times steps\n\t",
-        "Transients:", transient, "steps\n\t",
-        "Database file:", db_name, "\n\t",
-        "Experiments:", experiments, "\n\t",
-        "Output file:", output_file_name
-    )
+    print("Classifing rule space with spectro")
+    print("\tk:", k)
+    print("\tr:", r)
+    print("\tlength:", length)
+    print("\tt:", t)
+    print("\ttransient:", transient)
+    print("\tdb_name:", db_name)
+    print("\texperiments:", experiments)
+    print("\toutput_file_name:", output_file_name)
+    print()
 
     dataset_file = Path(db_name)
 

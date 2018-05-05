@@ -3,9 +3,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-print("Convolutional Neural Network Estimator for CA Classification, built with tf.layers")
-print("Importing...")
-
 import numpy as np
 import tensorflow as tf
 from pathlib import Path

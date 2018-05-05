@@ -16,9 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-print("Convolutional Neural Network Estimator for CA Classification, built with tf.layers")
-print("Importing...")
-
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
@@ -160,43 +157,56 @@ def predict_with_network_and_spectrum(k, r, total_ics, size, model_path, databas
 ###############################################################################
 def main(argv):
     if len(argv) < 7:
-        print("Usage: python ca_class_eval.py k, r, size, total_ics, model_path, database_file, output_file[, output_encoding]")
+        print("Usage: python ca_class_eval.py process k r size total_ics model_path database_file output_file [output_encoding]")
+        print("\tprocess == \"classify_space_rule\" or process == \"predict_with_network_and_spectrum\"")
         return
 
     print("Start evaluating...")
 
-    k = int(argv[0])
-    r = float(argv[1])
-    total_ics = int(argv[2])
-    size = int(argv[3])
-    model_path = argv[4]
-    database_file = argv[5]
-    output_file = argv[6]
+    process = argv[0]
+    k = int(argv[1])
+    r = float(argv[2])
+    total_ics = int(argv[3])
+    size = int(argv[4])
+    model_path = argv[5]
+    database_file = argv[6]
+    output_file = argv[7]
+    output_encoding = "utf-8"
+
+    if len(argv) > 8:
+        output_encoding = argv[8]
 
     dataset_file = Path(database_file)
 
     print("Parameters")
-    print("k:", k)
-    print("r:", r)
-    print("total_ics:", total_ics)
-    print("size:", size)
-    print("model_path:", model_path)
-    print("database_file:", database_file)
-    print("output_file:", output_file)
+    print("\tprocess:", process)
+    print("\tk:", k)
+    print("\tr:", r)
+    print("\ttotal_ics:", total_ics)
+    print("\tsize:", size)
+    print("\tmodel_path:", model_path)
+    print("\tdatabase_file:", database_file)
+    print("\toutput_file:", output_file)
+    print("\toutput_encoding:", output_encoding)
+    print()
 
-    classify_space_rule(k, r, size, total_ics, model_path, output_file)
+    if process == "classify_space_rule":
+        classify_space_rule(k, r, size, total_ics, model_path, output_file, output_encoding)
 
-    '''
-    if not dataset_file.exists():
-        print("Create spectrum dataset")    
-        nspec.create_spectrum_dataset(k, r, size, 3*size, 2*size, total_ics, database_file)
+    elif process == "predict_with_network_and_spectrum":
+        if not dataset_file.exists():
+            print("Create spectrum dataset")    
+            nspec.create_spectrum_dataset(k, r, size, 3*size, 2*size, total_ics, database_file, output_encoding)
 
-    if len(argv) >= 8:
-        output_encoding = argv[7]
-        predict_with_network_and_spectrum(k, r, total_ics, size, model_path, database_file, output_file, output_encoding)
+        if len(argv) >= 8:
+            output_encoding = argv[7]
+            predict_with_network_and_spectrum(k, r, total_ics, size, model_path, database_file, output_file, output_encoding)
+        else:
+            predict_with_network_and_spectrum(k, r, total_ics, size, model_path, database_file, output_file)
     else:
-        predict_with_network_and_spectrum(k, r, total_ics, size, model_path, database_file, output_file)
-    '''
+        print("Process choosed was not defined.")
+        print("process == \"classify_space_rule\" or process == \"predict_with_network_and_spectrum\"")
+        print()
 
     print("Finish.")
 

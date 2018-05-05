@@ -1,5 +1,3 @@
-print("Importing modules...")
-
 import os
 os.environ.setdefault('PATH', '')
 import time

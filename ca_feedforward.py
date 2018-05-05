@@ -3,9 +3,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-print("Feedforward Neural Network Estimator for CA Classification with FFT, built with tf.layers")
-print("Importing...")
-
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
