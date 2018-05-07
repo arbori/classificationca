@@ -198,9 +198,9 @@ def classify_elementar_space_spectro(k, r, length, t, transient, experiments, db
 ###############################################################################
 ###############################################################################
 def main(argv):
-    #if len(argv) < 7:
-    #    print("Usage: python neigbor_spectrum.py k r length t transient db_name experiments [output_file_name]")
-    #    return
+    if len(argv) < 7:
+        print("Usage: python neigbor_spectrum.py k r length t transient db_name experiments [output_file_name]")
+        return
 
     print("Start classifing...")
 

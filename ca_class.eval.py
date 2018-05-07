@@ -212,7 +212,4 @@ def main(argv):
 
 ###############################################################################
 if __name__ == "__main__":
-    #argv = ["classify_space_rule", "2", "1.0", "3", "100", "C:/Users/arbori/classification.data/ca_classification_kernel5x5", "./space_spectrum_dataset.csv", "./network_classification-r1.0.csv"]
-    #main(argv)
-
     main(sys.argv[1:])

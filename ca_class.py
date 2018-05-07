@@ -352,15 +352,6 @@ def main(argv):
 
     train_function(k, r, t, transient, train_data_size, train_file, eval_file, model_diretory)
 
-    '''
-    train_function(2, 1.0, 300, 200, 1100, 
-        "C:/Users/arbori/classification.data/ca_classification.train.data.npy",
-        "C:/Users/arbori/classification.data/ca_classification.eval.data.npy",
-        "C:/Users/arbori/classification.data/ca_classification_kernel5x5")
-    '''
 ###############################################################################
 if __name__ == "__main__":
-    #argv = ["2", "1.0", "300", "200", "1000", "C:/Users/arbori/classification.data/ca_classification.train.data.npy", "C:/Users/arbori/classification.data/ca_classification.eval.data.npy", "C:/Users/arbori/classification.data/ca_classification_f4_k5x5"]
-    #main(argv)
-
     main(sys.argv[1:])
