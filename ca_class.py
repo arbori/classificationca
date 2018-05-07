@@ -20,7 +20,7 @@ config = {}
 config["kernel_size"] = [5,5]
 config["padding="] = "same"
 config["steps"] = 1000
-config["batch_size"] = 500
+config["batch_size"] = 200
 
 ###############################################################################
 def cnn_model_fn(features, labels, mode):
@@ -136,6 +136,119 @@ def cnn_model_fn(features, labels, mode):
         mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 ###############################################################################
+def network_model_fn(features, labels, mode):
+    """Model function for CNN."""
+    # Input Layer
+    # Reshape X to 4-D tensor: [batch_size, width, height, channels]
+    # Temporal Evolution are 100x100 cells, and have one color channel (black or white)
+    input_layer = tf.reshape(features["x"], [-1, 100, 100, 1])
+
+    # Convolutional Layer #1
+    # Computes 32 features using a 3x3 filter with ReLU activation.
+    # Padding is added to preserve width and height.
+    # Input Tensor Shape: [batch_size, 100, 100, 1]
+    # Output Tensor Shape: [batch_size, 100, 100, 4]
+    conv1 = tf.layers.conv2d(
+        inputs=input_layer,
+        filters=4, 
+        kernel_size = config["kernel_size"], 
+        padding="same", 
+        activation=tf.nn.relu)
+
+    # Pooling Layer #1
+    # First max pooling layer with a 2x2 filter and stride of 2
+    # Input Tensor Shape: [batch_size, 100, 100, 4]
+    # Output Tensor Shape: [batch_size, 50, 50, 4]
+    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+
+    # Convolutional Layer #2
+    # Computes 64 features using a 3x3 filter with ReLU activation.
+    # Padding is added to preserve width and height.
+    # Input Tensor Shape: [batch_size, 50, 50, 4]
+    # Output Tensor Shape: [batch_size, 50, 50, 8]
+    conv2 = tf.layers.conv2d(
+        inputs=pool1,
+        filters=8, 
+        kernel_size = config["kernel_size"], 
+        padding="same", 
+        activation=tf.nn.relu)
+
+    # Pooling Layer #2
+    # First max pooling layer with a 2x2 filter and stride of 2
+    # Input Tensor Shape: [batch_size, 50, 50, 8]
+    # Output Tensor Shape: [batch_size, 25, 25, 8]
+    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
+
+    # Convolutional Layer #3
+    # Computes 128 features using a 3x3 filter with ReLU activation.
+    # Padding is added to preserve width and height.
+    # Input Tensor Shape: [batch_size, 25, 25, 8]
+    # Output Tensor Shape: [batch_size, 25, 25, 16]
+    conv3 = tf.layers.conv2d(
+        inputs=pool2,
+        filters=16,
+        kernel_size=config["kernel_size"], 
+        padding="same", 
+        activation=tf.nn.relu)
+
+    # Pooling Layer #1
+    # First max pooling layer with a 2x2 filter and stride of 2
+    # Input Tensor Shape: [batch_size, 25, 25, 16]
+    # Output Tensor Shape: [batch_size, 12, 12, 16]
+    pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=2)
+
+    # Flatten tensor into a batch of vectors
+    # Input Tensor Shape: [batch_size, 12, 12, 16]
+    # Output Tensor Shape: [batch_size, 12 * 12 * 16]
+    pool3_flat = tf.reshape(pool3, [-1, 12 * 12 * 16])
+
+    # Dense Layer
+    # Densely connected layer with 1024 neurons
+    # Input Tensor Shape: [batch_size, 12 * 12 * 16]
+    # Output Tensor Shape: [batch_size, 1024]
+    dense = tf.layers.dense(inputs=pool3_flat, units=1024, activation=tf.nn.relu)
+
+    # Add dropout operation; 0.7 probability that element will be kept
+    ### Why drouput elements?
+        #==> Dropout: A Simple Way to Prevent Neural Networks from Overfitting (pdf)
+        ### So, how define the rate?
+    dropout = tf.layers.dropout(
+        inputs=dense, rate=0.7, training=mode == tf.estimator.ModeKeys.TRAIN)
+
+    # Logits layer
+    # Input Tensor Shape: [batch_size, 1024]
+    # Output Tensor Shape: [batch_size, 4]
+    logits = tf.layers.dense(inputs=dropout, units=4)
+
+    predictions = {
+        # Generate predictions (for PREDICT and EVAL mode)
+        "classes": tf.argmax(input=logits, axis=1),
+        # Add `softmax_tensor` to the graph. It is used for PREDICT and by the
+        # `logging_hook`.
+        "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
+    }
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
+    # Calculate Loss (for both TRAIN and EVAL modes)
+    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
+
+    # Configure the Training Op (for TRAIN mode)
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        train_op = optimizer.minimize(
+            loss=loss,
+            global_step=tf.train.get_global_step())
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+
+    # Add evaluation metrics (for EVAL mode)
+    eval_metric_ops = {
+        "accuracy": tf.metrics.accuracy(
+            labels=labels, predictions=predictions["classes"])}
+    return tf.estimator.EstimatorSpec(
+        mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
+
+###############################################################################
 def train_function(k, r, t, transient, train_data_size, train_file, eval_file, model_diretory):
     eval_data_size = int(0.1*train_data_size)
     if eval_data_size <= 0:
@@ -187,7 +300,7 @@ def train_function(k, r, t, transient, train_data_size, train_file, eval_file, m
     print("Create the Estimator")
     ca_classifier = tf.estimator.Estimator(
         #model_fn=cnn_model_fn, model_dir=model_diretory)
-        model_fn=cnn_model_fn, model_dir=model_diretory)
+        model_fn=network_model_fn, model_dir=model_diretory)
 
     # Set up logging for predictions
     # Log the values in the "Softmax" tensor with label "probabilities"
@@ -247,4 +360,7 @@ def main(argv):
     '''
 ###############################################################################
 if __name__ == "__main__":
+    #argv = ["2", "1.0", "300", "200", "1000", "C:/Users/arbori/classification.data/ca_classification.train.data.npy", "C:/Users/arbori/classification.data/ca_classification.eval.data.npy", "C:/Users/arbori/classification.data/ca_classification_f4_k5x5"]
+    #main(argv)
+
     main(sys.argv[1:])

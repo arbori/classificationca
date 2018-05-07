@@ -102,7 +102,7 @@ def predict_with_network_and_spectrum(k, r, total_ics, size, model_path, databas
     # Create the Estimator
     print("Retriving the estimator in", model_path)
     network_estimator = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir=model_path)
+        model_fn=cac.cnn_model_fn, model_dir=model_path)
 
     print("Retriving database", database_file)
     db = nspec.retrieve_spectrum_dataset(database_file)
@@ -212,4 +212,7 @@ def main(argv):
 
 ###############################################################################
 if __name__ == "__main__":
+    #argv = ["classify_space_rule", "2", "1.0", "3", "100", "C:/Users/arbori/classification.data/ca_classification_kernel5x5", "./space_spectrum_dataset.csv", "./network_classification-r1.0.csv"]
+    #main(argv)
+
     main(sys.argv[1:])

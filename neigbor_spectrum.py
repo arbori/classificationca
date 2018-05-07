@@ -17,6 +17,22 @@ def get_tmstr():
     return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
 
 ###############################################################################
+def te2ne(te, k, r):
+    '''
+    Convert a temporal evolution matrix, that has only 0 and 1, to a 
+    neighborhood evolution. Where each cell has the neighborhood number value.
+    '''
+    ne = [line[:] for line in te]
+
+    for y in range(len(ne)):
+        for x in range(len(ne[0])):
+            index = cca.winNumber(te, x, y, int(2*r+1), int(2*r+1), k)
+
+            ne[y][x] = index
+
+    return ne
+
+###############################################################################
 def neighborhood_configuration_spectrum(te, k, r):
     '''
     Create the temporal evolution's spectrum from temporal evolution te, 
@@ -24,12 +40,9 @@ def neighborhood_configuration_spectrum(te, k, r):
     '''
     spectrum = [0.0] * int(pow(k, (2*r + 1)*(2*r + 1)))
 
-    for line in range(len(te)):
-        for cell in range(len(te[0])):
-            index = cca.winNumber(te, cell, line, int(2*r+1), int(2*r+1), k)
-
-            if index >= len(spectrum):
-                print(te, index, cell, line, int(2*r+1), int(2*r+1), k)
+    for y in range(len(te)):
+        for x in range(len(te[0])):
+            index = cca.winNumber(te, x, y, int(2*r+1), int(2*r+1), k)
 
             spectrum[index] += 1
 
