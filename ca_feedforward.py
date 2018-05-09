@@ -202,10 +202,54 @@ def train_function(k, r, t, transient, train_data_size, train_file, eval_file, m
     print(eval_results)
 
 ###############################################################################
+def feedforward_classify_space_rule(k, r, size, total_ics, model_path, output_file, output_encoding='utf-8'):
+    t = 3*size
+    transient = 2*size
+
+    m = 2*r + 1
+    rule_size = int(pow(k, pow(k, m)))
+
+    # Create the Estimator
+    print("Create the Estimator")
+    ca_classifier = tf.estimator.Estimator(
+        model_fn=model_function, model_dir=model_path)
+
+    # Predict CA in ray 1 space
+    with open(output_file, mode='w', encoding=output_encoding) as a_file:
+        for n in range(rule_size):
+            print("Rule:", n)
+
+            eval_data = cca.make_temporal_evolutions_rule(total_ics, n, k, r, t, transient)
+
+            eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+                x={"x": np.array(eval_data[0], dtype=np.float32)},
+                num_epochs=1,
+                shuffle=False)
+
+            result_predict = ca_classifier.predict(eval_input_fn, predict_keys=None, hooks=None)
+
+            eval_prob = [p['probabilities'] for p in result_predict]
+            eval_prob = [np.sum(line) for line in np.transpose(eval_prob)]
+            eval_prob = eval_prob / np.sum(eval_prob)
+
+            a_file.write(str(n))
+            a_file.write("\t")
+            a_file.write(str(cca.wolfram_class(n)))
+            a_file.write("\t")
+            a_file.write(str(np.argmax(eval_prob) + 1))
+            a_file.write("\t")
+            for val in eval_prob:
+                a_file.write(str(val))
+                a_file.write("\t")
+            a_file.write("\n")
+
+            a_file.flush()
+
+###############################################################################
 def main(argv):
-    if len(argv) < 8:
-        print("Usage: python ca_class.py k r t transient train_data_size train_file eval_file model_diretory")
-        return
+#    if len(argv) < 9:
+#        print("Usage: python ca_class.py k r t transient train_data_size train_file eval_file model_diretory output_file")
+#        return
 
     print("Start training...")
 
@@ -218,8 +262,17 @@ def main(argv):
     eval_file = argv[6]
     model_diretory = argv[7]
 
-    train_function(k, r, t, transient, train_data_size, train_file, eval_file, model_diretory)
+#    train_function(k, r, t, transient, train_data_size, train_file, eval_file, model_diretory)
+
+    size = t - transient
+    total_ics = train_data_size
+    model_path = model_diretory
+    output_file = eval_file
+    feedforward_classify_space_rule(k, r, size, total_ics, model_path, output_file)
 
 ###############################################################################
 if __name__ == "__main__":
+    argv = [2, 1.0, 300, 200, 500, "", "C:/Users/arbori/classification.data/network_feedforward_classification-r1.0.csv", "C:/Users/arbori/classification.data/ca_class_feedforward"]
+    main(argv)
+
     main(sys.argv[1:])
