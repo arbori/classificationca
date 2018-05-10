@@ -219,7 +219,7 @@ def feedforward_classify_space_rule(k, r, size, total_ics, model_path, output_fi
         for n in range(rule_size):
             print("Rule:", n)
 
-            eval_data = cca.make_temporal_evolutions_rule(total_ics, n, k, r, t, transient)
+            eval_data = make_set_pair_ne_label(train_data_size, k, r, t, transient)
 
             eval_input_fn = tf.estimator.inputs.numpy_input_fn(
                 x={"x": np.array(eval_data[0], dtype=np.float32)},
@@ -272,7 +272,7 @@ def main(argv):
 
 ###############################################################################
 if __name__ == "__main__":
-    argv = [2, 1.0, 300, 200, 500, "", "C:/Users/arbori/classification.data/network_feedforward_classification-r1.0.csv", "C:/Users/arbori/classification.data/ca_class_feedforward"]
-    main(argv)
+    #argv = [2, 1.0, 300, 200, 500, "", "C:/Users/arbori/classification.data/network_feedforward_classification-r1.0.csv", "C:/Users/arbori/classification.data/ca_class_feedforward"]
+    #main(argv)
 
     main(sys.argv[1:])

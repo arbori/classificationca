@@ -41,7 +41,8 @@ def classify_space_rule(k, r, size, total_ics, model_path, output_file, output_e
     # Create the Estimator
     print("Create the Estimator")
     ca_classifier = tf.estimator.Estimator(
-        model_fn=cac.cnn_model_fn, model_dir=model_path)
+        #model_fn=cac.cnn_model_fn, model_dir=model_path)
+        model_fn=cac.network_model_fn, model_dir=model_path)
 
     # Predict CA in ray 1 space
     with open(output_file, mode='w', encoding=output_encoding) as a_file:
