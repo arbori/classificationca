@@ -199,7 +199,7 @@ def main(argv):
             print("Create spectrum dataset")    
             nspec.create_spectrum_dataset(k, r, size, 3*size, 2*size, total_ics, database_file, output_encoding)
 
-        if len(argv) >= 8:
+        if len(argv) >= 9:
             output_encoding = argv[7]
             predict_with_network_and_spectrum(k, r, total_ics, size, model_path, database_file, output_file, output_encoding)
         else:
